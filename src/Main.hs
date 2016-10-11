@@ -62,7 +62,7 @@ trumpetCombinations = [(a, b, c) | a <- states, b <- states, c <- states]
 possibleCombinations = length trumpetCombinations
 
 
-persons = ["mikael", "martin", "martinL", "Johanna", "erik"]
+persons = ["mikael", "martin", "susannsusanna", "Johanna", "erik"]
 possibleDuos = [(a, b) | a <- persons, b <- persons, a /= b, a < b]
 
 multiplicationTable = [(a, b, a * b) | a <- [0..10], b <- [0..10]]
@@ -167,6 +167,13 @@ readFormated string = read trimmedDigit :: Float
 --            -     fmap f EmptyTree = EmptyTree
 --            -     fmap f (Node val left right) = Node (f val) (fmap f left) (fmap f right)
 
+-- newtype    - Skapar en ny typ av en befintlig. Är typ en "container". Eg. ZipList
+--            - newtype Ziplist [] = Ziplist {getZipList :: []}
+--            - Används för att kunna skapa olika beteenden för samma underliggande datatyp.
+--            - Te.x. kan nummer vara monoids på olika sätt 1 + (1 + 0) == (1 + 1) + 0
+--            - eller 1 * (2 * 2) == (1 * 2) * 2
+--            - För detta endamål skapades "newtypes" för Sum resp Product
+
 data Point = Point Float Float deriving (Show)
 data Shape = Circle Point Float | Rectangle Point Point deriving (Show)
 
@@ -215,6 +222,12 @@ data Tree a = EmptyTree | Node a (Tree a) (Tree a)
 instance Functor Tree where
     fmap _ EmptyTree = EmptyTree
     fmap f (Node val left right) = Node (f val) (fmap f left) (fmap f right)
+
+instance Foldable Tree where
+    foldMap f EmptyTree = mempty
+    foldMap f (Node x l r) = foldMap f l `mappend`
+                             f x `mappend`
+                             foldMap f r
 
 singleton :: a -> Tree a
 singleton x = Node x EmptyTree EmptyTree
@@ -269,3 +282,59 @@ instance YesNo Bool where
 instance YesNo (Maybe a) where
     yesno Nothing = False
     yesno _ = True
+
+
+-- Some IO --
+
+readAndPrint = do
+    line <- getLine
+    let line' = reverse line
+    putStrLn $ line ++ " is " ++ line' ++ " reversed."
+    putStrLn $ if (line == line') then "Its a palindrome" else "Its not a palindrome"
+
+readAndPrint' = do
+    line <- fmap reverse getLine
+    putStrLn $ "You said " ++ line ++ " backwards."
+
+shout = do line <- fmap ((++ "!!!") . map toUpper) getLine
+           putStrLn line
+
+-- Applicative functors --
+
+coolStuff = [(+10), (*2), (**2)] <*> [1,2,3]
+
+shoutVersions x = [(++ "!"), (map toUpper), ((++ "!!!") . map toUpper)] <*> [x]
+-- ["Mikael!","MIKAEL","MIKAEL!!!"]
+
+justMath = (+) <$> Just 10 <*> Just 20
+-- Just 30
+
+addJust :: (Num a) => Maybe a -> Maybe a -> Maybe a
+addJust x y = (+) <$> x <*> y
+
+addJust' :: (Num a) => Maybe a -> Maybe a -> Maybe a
+addJust' x y = pure (+) <*> x <*> y
+
+pow1pow2pow3 :: Double -> [Double]
+pow1pow2pow3 = (\x y z -> [x, y, z]) <$> (**1) <*> (**2) <*> (**3)
+
+cartesian :: [a] -> [b] -> [(a, b)]
+cartesian x y = (\x y -> (x, y)) <$> x <*> y
+
+
+-- Monads ---
+
+applyMaybe :: Maybe a -> (a -> Maybe b) -> Maybe b
+applyMaybe Nothing _ = Nothing
+applyMaybe (Just x) f = f x
+
+--- *Main Data.Monoid F> applyMaybe (Just 10) (\x -> Just $ x + 10)
+--- Just 20
+--- *Main Data.Monoid F> Just 3 `applyMaybe` \x -> Just(x + 19)
+--- Just 22
+--- *Main Data.Monoid F> Just 3 `applyMaybe` \x -> Just(x + 19)
+--- Just 22
+--- *Main Data.Monoid F> Just 3 `applyMaybe` \x -> Just(x + 123)
+--- Just 126
+--- *Main Data.Monoid F> Just "hej" `applyMaybe` \x -> Just(x ++ "hej")
+
