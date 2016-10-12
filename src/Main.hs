@@ -338,3 +338,25 @@ applyMaybe (Just x) f = f x
 --- Just 126
 --- *Main Data.Monoid F> Just "hej" `applyMaybe` \x -> Just(x ++ "hej")
 
+addIfEven :: (Integral a) => a -> a -> Maybe a
+addIfEven x i
+    | even x = Just $ i + x
+    | otherwise = Nothing
+
+-- *Main> addIfEven 2 2 >>= addIfEven 3 >>= addIfEven 4
+-- Nothing
+-- *Main> addIfEven 2 2 >>= addIfEven 2 >>= addIfEven 4
+-- Just 10
+-- *Main> Just 10 >> Nothing >> Just 20
+-- Nothing
+
+concatMaybe :: Maybe String -> Maybe String -> Maybe String
+concatMaybe a b = do
+    x <- a
+    y <- b
+    Just $ x ++ y
+
+-- *Main> concatMaybe (Just "hej ") (Just "!")
+-- Just "hej !"
+
+-- TODO , implementera "knightMoveIn3 Pos Pos"
