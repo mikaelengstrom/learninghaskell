@@ -359,4 +359,30 @@ concatMaybe a b = do
 -- *Main> concatMaybe (Just "hej ") (Just "!")
 -- Just "hej !"
 
--- TODO , implementera "knightMoveIn3 Pos Pos"
+
+-- Small program to calculate how many moves required for a chess knight
+-- to move from Pos a -> Pos b
+
+-- λ: movesRequired (1,1) (8,8)
+-- 6
+
+type Pos = (Int, Int)
+
+inBoardRange :: Pos -> Bool
+inBoardRange (x, y) = all (`elem` [1..8]) [x, y]
+
+assertValidPosition x
+    | inBoardRange x = x
+    | otherwise = error $ "Invalid knight position -- " ++ show x
+
+possibleKnightMoves :: Pos -> [Pos]
+possibleKnightMoves pos = let (x, y) = assertValidPosition pos
+                          in filter inBoardRange [(x + x', y + y')
+                                                 | x' <- [-2, -1, 1, 2], y' <- [-2, -1, 1, 2]
+                                                 , abs x' /= abs y']
+
+movesRequired :: Pos -> Pos -> Int
+movesRequired from to = let [from', to'] = fmap assertValidPosition [from, to]
+    in calculate [from'] to' 0
+    where calculate stack to' i = if to' `elem` stack then i else calculate (stack >>= possibleKnightMoves) to' i + 1
+
