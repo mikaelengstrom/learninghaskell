@@ -2,6 +2,7 @@ module Main where
 
 import Data.List
 import Data.Char
+import Control.Monad
 
 -- Hello world --
 
@@ -385,4 +386,64 @@ movesRequired :: Pos -> Pos -> Int
 movesRequired from to = let [from', to'] = fmap assertValidPosition [from, to]
     in calculate [from'] to' 0
     where calculate stack to' i = if to' `elem` stack then i else calculate (stack >>= possibleKnightMoves) to' i + 1
+
+
+-- Eight queens
+-- Returns all possible combinations of queens on a chess board that do not
+-- check each other
+
+type Pixel = (Pos, Char)
+
+allPossiblePositions :: [[Pos]]
+allPossiblePositions = do
+        q1 <- [(1, y) | y <- [1..8]]
+        q2 <- [(2, y) | y <- [1..8]]
+        q3 <- [(3, y) | y <- [1..8]]
+        q4 <- [(4, y) | y <- [1..8]]
+        q5 <- [(5, y) | y <- [1..8]]
+        q6 <- [(6, y) | y <- [1..8]]
+        q7 <- [(7, y) | y <- [1..8]]
+        q8 <- [(8, y) | y <- [1..8]]
+
+        let row = [q1, q2, q3, q4, q5, q6, q7, q8]
+            ys = fmap snd row
+            diag1 = fmap (\(x, y) -> x + y) row
+            diag2 = fmap (\(x, y) -> x - y) row
+
+        guard ((length row) == (length $ nub ys))
+        guard ((length diag1) == (length $ nub diag1))
+        guard ((length diag2) == (length $ nub diag2))
+
+        return row
+
+eightQueens :: [Pixel]
+eightQueens = [(pos, 'Q') | pos <- head allPossiblePositions]
+
+
+
+getPixelMap :: [Pixel] -> [Pixel]
+getPixelMap replacements = fmap maybeReplacePixel blankBoard
+    where   blankBoard = [((x, y), '_') | x <- [1..8], y <- [1..8]]
+            maybeReplacePixel (pos, char) = if (replacement pos /= []) then head (replacement pos) else (pos, char)
+            replacement pos = filter ((pos ==) . fst) replacements
+
+pixelMapToRows :: [Pixel] -> [[Pixel]]
+pixelMapToRows pixelmap = fmap getPixelsForRow [1..8]
+    where getPixelsForRow y = filter ((y ==) . snd . fst) pixelmap
+
+printBoard pixelmap = mapM_ printWithPipes $ extractChar (pixelMapToRows pixelmap)
+    where extractChar = fmap (fmap snd)
+          printWithPipes = putStrLn . intersperse '|'
+
+printQueens = printBoard $ getPixelMap $ eightQueens
+
+--  λ: printQueens
+--  Q|_|_|_|_|_|_|_
+--  _|_|_|_|_|_|Q|_
+--  _|_|_|_|Q|_|_|_
+--  _|_|_|_|_|_|_|Q
+--  _|Q|_|_|_|_|_|_
+--  _|_|_|Q|_|_|_|_
+--  _|_|_|_|_|Q|_|_
+--  _|_|Q|_|_|_|_|_
 
